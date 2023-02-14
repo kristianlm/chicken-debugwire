@@ -169,12 +169,12 @@
   (set! (IR dw) word)
   (dw-write dw (bytevector #x23)))
 
-;; ==================== 4.5.1 General Purpose Register File
+;; ======================================== common registers
 
-(define r0
+(define r
   (getter-with-setter
-   (lambda (dw)       (dw-registers-read  dw 0 1))
-   (lambda (dw value) (dw-registers-write dw 0 (bytevector value)))))
+   (lambda (dw register)       (bytes->u8 (dw-registers-read  dw register 1)))
+   (lambda (dw register value) (dw-registers-write dw register (bytevector value)))))
 
 (define r24
   (getter-with-setter
@@ -198,6 +198,12 @@
   (getter-with-setter
    (lambda (dw) (bytes->u16le (dw-registers-read dw 30 2)))
    (lambda (dw value) (dw-registers-write dw 30 (u16le->bytes value)))))
+
+;; ======================================== SRAM
+(define SP
+  (getter-with-setter
+   (lambda (dw) (bytes->u16le (dw-sram-read dw #x5D 2)))
+   (lambda (dw v) (dw-sram-write dw #x5D (u16le->bytes v)))))
 
 
 ;; u8 hi(int w) {return (w>>8)&0xff;}
@@ -274,7 +280,15 @@
   ;;(dw-exec dw out37r24)
   (dw-exec dw (spm)))
 
-(dw-sram-read dw 500 1)
+(dw-flash-read dw 1000 16)
+(rcall 1000)
+
+(begin
+  (dw-sram-write dw 500 "_ELLO")
+  (set! (Z dw) 500)
+  (dw-registers-write dw 24 "H")
+  (dw-exec dw (stZ 24))
+  (dw-sram-read dw 500 5))
 
 (dw-exec dw (eor 24 24))
 (begin ;; yey!

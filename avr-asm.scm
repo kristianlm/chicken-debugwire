@@ -88,9 +88,11 @@
                   (integer->opcode
                    ,(bitcoding->integer bitcoding)
                    ,(length bitcoding))))
-            ;; check that all variables have no "bits left":
+            ;; check that all variables have no "bits left". it
+            ;; doesn't always work (for negative numbers), but better
+            ;; than nothing.
             ,@(map (lambda (x)
-                     `(unless (zero? ,x)
+                     `(unless (or (equal? -1 ,x) (equal? 0 ,x))
                         (error (conc (quote ,op) ": "
                                      ,(count (cut equal? x <>) bitcoding) "-bit "
                                      "operand overflow: " (quote ,x))

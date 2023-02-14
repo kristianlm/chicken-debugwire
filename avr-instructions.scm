@@ -110,6 +110,10 @@
   ()
   "1001 0101 0000 1000")
 
+(define-instruction rcall "Relative Call to Subroutine"
+  ((k (constant (between -2048 2047))))
+  "1101 kkkk kkkk kkkk")
+
 (define-instruction rjmp "Relative Jump"
   ((k (flashadr (between -2048 2047))))
   "1100 kkkk kkkk kkkk")
