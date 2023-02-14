@@ -99,11 +99,11 @@
   "1011 1AAr rrrr AAAA" )
 
 (define-instruction pop "Pop Register from Stack"
-  ((d (register 0 31)))
+  ((d (register (between 0 31))))
   "1001 000d dddd 1111")
 
 (define-instruction push  "Push Register on Stack"
-  ((d (register 0 31)))
+  ((d (register (between 0 31))))
   "1001 001d dddd 1111")
 
 (define-instruction ret "Return from Subroutine"
@@ -115,12 +115,12 @@
   "1100 kkkk kkkk kkkk")
 
 (define-instruction ser "Set all Bits in Register"
-  ((d (register 16 31)))
+  ((d (register (between 16 31))))
   "1110 1111 dddd 1111" )
 
 (define-instruction sbrs "Skip if Bit in Register is Set"
-  ((r (register  0 31))
-   (b (constant  0 7)))
+  ((r (register  (between 0 31)))
+   (b (constant  (between 0 7))))
   "1111 111r rrrr 0bbb")
 
 (define-instruction spm "Store Program Memory"
@@ -128,16 +128,16 @@
   "1001 0101 1110 1000")
 
 (define-instruction sts "Store Direct to Data Space"
-  ((k (constant 0 65535))
-   (d (register 0 31)))
+  ((k (constant (between 0 65535)))
+   (d (register (between 0 31))))
   "1001 001d dddd 0000 kkkk kkkk kkkk kkkk")
 
 (define-instruction stZ "Store Indirect From Register to Data Space using Index Z"
-  ((r (register 0 31)))
+  ((r (register (between 0 31))))
   "1000 001r rrrr 0000")
 
 (define-instruction stZ+q  "Store Indirect From Register to Data Space using Index Z+q"
-  ((q (constant 0 63))
-   (r (register 0 31)))
+  ((q (constant (between 0 63)))
+   (r (register (between 0 31))))
   "10q0 qq1r rrrr 0qqq")
 
