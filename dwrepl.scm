@@ -20,6 +20,7 @@
       (cond ((char? b)   (list b))
             ((number? b) (list (integer->char b)))
             ((string? b) (string->list b))
+            ((blob? b) (string->list (blob->string b)))
             (else (error "bytevector: expecting number/string"))))
     bytes)))
 
@@ -154,7 +155,12 @@
    (lambda (dw value)
      (let ((value (cond ((string? value)
                          (unless (equal? 2 (number-of-bytes value))
-                           (error "expecting 2-byte instruction" (wrt value)))value)
+                           (error "IR: expecting 2-byte instruction" (wrt value)))
+                         value)
+                        ((blob? value)
+                         (unless (equal? 2 (number-of-bytes value))
+                           (error "IR: expecting 2-byte instruction" (wrt value)))
+                         value)
                         ((number? value) (u16be->bytes value))
                         (else (error "don't know how to IR this" value)))))
        (dw-write dw (bytevector #xD2 value))))))
@@ -228,29 +234,10 @@
    (lambda (dw v) (dw-sram-write dw #x38 (u8->bytes v)))))
 
 
-(define SPMCSR
-  (getter-with-setter
-   (lambda (dw) (bytes->u8 (dw-sram-read dw #x57 1)))
-   (lambda (dw v) (dw-sram-write dw #x57 (u8->bytes v)))))
-
-
-(define (dw-register1 dw reg)
-  (set! (PC dw) reg)
-  (set! (BP dw) (+ 1 reg))
-  (dw-write dw (bytevector #x66
-                           ;;#xD0 00 r
-                           ;;#xD1 00 r+1
-                           #xC2 #x01 #x21)))
-
-(define (dw-register1! dw reg value)
-  (set! (PC dw) reg)
-  (set! (BP dw) (+ 1 reg))
-  (dw-write dw (bytevector #x66
-                           ;;#xD0 00 r
-                           ;;#xD1 00 r+1
-                           #xC2 #x05 #x21 value)))
-
-
+;; (define SPMCSR
+;;   (getter-with-setter
+;;    (lambda (dw) (bytes->u8 (dw-sram-read dw #x57 1)))
+;;    (lambda (dw v) (dw-sram-write dw #x57 (u8->bytes v)))))
 
 ;; ==================== flash ====================
 
@@ -278,28 +265,22 @@
 ;; addressed by the Z-pointer.
 (define (dw-flash-write dw start data)
   (define SPMEN (arithmetic-shift 1 0)) ;; self-program memory enable (?)
-  ;;(define out37r24 "\xBF\x87")
-  (define spm      "\x95\xE8")
+  ;; (define out37r24 "\xBF\x87")
+  ;; (define spm      "\x95\xE8")
+  
   
   (set! (Z dw) start)
   (set! (SPMCSR dw) (bitwise-ior SPMEN))
   ;;(dw-exec dw out37r24)
-  (dw-exec dw spm))
+  (dw-exec dw (spm)))
 
-(dw-flash-page-erase dw 50)
+(dw-sram-read dw 500 1)
+
+(dw-exec dw (eor 24 24))
+(begin ;; yey!
+  (dw-exec dw (ldi 24 66))
+  (dw-registers-read dw 24 1))
+;;(dw-flash-page-erase dw 50)
 
 (string->blob (dw-flash-read dw 50 170))
-
-;; ============================================================
-
-
-;; 00000000 <foo>:
-;;    0:	80 e1       	ldi	r24, 0x10	; 16
-;;    2:	87 bb       	out	0x17, r24	; 23
-;;    6:	98 95       	break
-;;    8:	08 95       	ret
-
-;;      ldi r24,0x10   out 0x17,r24   break
-(begin #${80 e1        87 bb           98 95 })
-
 
