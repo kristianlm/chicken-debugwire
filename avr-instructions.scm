@@ -6,14 +6,9 @@
 
 (define (register r) r)
 (define (constant k) k)
-(define (flashadr a)
+(define (half a)
   (when (odd? a) (error "odd address operand" a))
   (arithmetic-shift a -1))
-
-(pp (expand '(instruction->procedure add "Add without Carry"
-                                  ((d (register (between 0 31)))
-                                   (r (register (between 0 31))))
-                                  "0000 11rd dddd rrrr")))
 
 (define-instruction add "Add without Carry"
   ((d (register (between 0 31)))
@@ -35,14 +30,15 @@
   "1001 0101 1001 1000")
 
 (define-instruction breq "Branch if Equal"
-  ((k ((between -64 63) flashadr)))
+  ((k (constant (between -64 63))))
   "1111 00kk kkkk k001")
 
 (define-instruction brne "Branch if Not Equal"
   ((k (constant (between -64 63))))
   "1111 01kk kkkk k001")
+
 (define-instruction call "Long Call to a Subroutine"
-  ((k (flashadr (between 0 #xffff)))) ;; for 16-bit PC counter (128k mem or less)
+  ((k (half (between 0 #xffff)))) ;; for 16-bit PC counter (128k mem or less)
   "1001 010k kkkk 111k 
    kkkk kkkk kkkk kkkk")
 
@@ -123,7 +119,7 @@
   "1101 kkkk kkkk kkkk")
 
 (define-instruction rjmp "Relative Jump"
-  ((k (flashadr (between -2048 2047))))
+  ((k (half (between -2048 2047))))
   "1100 kkkk kkkk kkkk")
 
 (define-instruction ser "Set all Bits in Register"
