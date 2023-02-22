@@ -19,12 +19,28 @@
       (error "operand must be even" k)))
 
 
-;; (integer->opcode #xAA112233 32) => #${aa112233}
+;; I'd love to keep the instruction as an integer, but then we
+;; wouldn't know if it originally was 16-bit or 32-bit. Therefore, we
+;; return blobs here. This returns the bytes in the order as stored on
+;; flash (pairwise little-endian).
+;;
+;; (integer->opcode #xAA112233 32) => #${11aa3322}
 (define (integer->opcode n size)
-  (let loop ((n n) (size (quotient size 8)) (result '()))
-    (if (> size 0)
-        (loop (arithmetic-shift n -8) (- size 1) (cons (bitwise-and n #xFF) result))
-        (u8vector->blob/shared (list->u8vector result)))))
+  (cond ((= size 16)
+         (u8vector->blob/shared
+          (list->u8vector (list (bitwise-and (arithmetic-shift n   0) #xFF)
+                                (bitwise-and (arithmetic-shift n  -8) #xFF)))))
+        ((= size 32)
+         (u8vector->blob/shared
+          (list->u8vector (list (bitwise-and (arithmetic-shift n -16) #xFF)
+                                (bitwise-and (arithmetic-shift n -24) #xFF)
+                                (bitwise-and (arithmetic-shift n   0) #xFF)
+                                (bitwise-and (arithmetic-shift n  -8) #xFF)))))
+        (else (error "expecting instruction size 16 or 32, got " size))))
+
+;; go from sram-address (eg SPMCSR #x57) to io address (used in in /
+;; out instructions)
+(define (adr->io address) (- address #x20))
 
 ;; (avr-instruction <name> <description> <lets> <bitcoding>)
 (define-syntax instruction->procedure
@@ -113,16 +129,15 @@
 (test-group
  "instruction->procedure"
  (test #${af}   ((instruction->procedure _ _ () "1010 1111")))
- (test #${0fff} (add 31 31))
- (test #${0c00} (add  0  0))
- (test #${27ff} (eor 31 31))
+ (test #${ff 0f} (add 31 31))
+ (test #${00 0c} (add  0  0))
+ (test #${ff 27} (eor 31 31))
 
  (test-error (add 32 32))
 
- 
  (test
-  (list #${e180} #${bb87} #${9598})
+  (list #${80 e1} #${87 bf} #${98 95})
   (list (ldi 24 #x10)
-        (out #x17 24)
+        (out #x37 24)
         (break))))
 
