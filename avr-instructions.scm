@@ -20,6 +20,11 @@
    (r (register (between 0 31))))
   "0000 11rd dddd rrrr")
 
+(define-instruction adiw "Add Immediate to Word"
+  ((d (register (between 24 30) (cut - <> 24) half))
+   (K (constant (between 0 63))))
+  "1001 0110 KKdd KKKK")
+
 (define-instruction andi "Logical AND with Immediate"
   ((d (register (between 16 31) (cut - <> 16)))
    (K (constant (between 0 255))))
@@ -33,6 +38,9 @@
   ((k ((between -64 63) flashadr)))
   "1111 00kk kkkk k001")
 
+(define-instruction brne "Branch if Not Equal"
+  ((k (constant (between -64 63))))
+  "1111 01kk kkkk k001")
 (define-instruction call "Long Call to a Subroutine"
   ((k (flashadr (between 0 #xffff)))) ;; for 16-bit PC counter (128k mem or less)
   "1001 010k kkkk 111k 
@@ -122,6 +130,11 @@
   ((d (register (between 16 31))))
   "1110 1111 dddd 1111" )
 
+(define-instruction sbci "Subtract Immediate with Carry SBI - Set Bit in I/O Register"
+  ((d (constant (between 0 0)))
+   (K (constant (between 0 0))))
+  "0100 KKKK dddd KKKK")
+
 (define-instruction sbrs "Skip if Bit in Register is Set"
   ((r (register  (between 0 31)))
    (b (constant  (between 0 7))))
@@ -145,3 +158,7 @@
    (r (register (between 0 31))))
   "10q0 qq1r rrrr 0qqq")
 
+(define-instruction subi "Subtract Immediate"
+  ((d (register (between 16 31) (cut - <> 16)))
+   (K (constant (between 0 255))))
+  "0101 KKKK dddd KKKK")
