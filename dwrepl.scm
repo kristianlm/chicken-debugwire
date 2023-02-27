@@ -92,9 +92,13 @@
           (if (> (current-seconds) eot)
               (timeout result)
               (apply (lambda (chunk bytes)
-                       (unless (= bytes len)
-                         (thread-sleep! 0.1))
-                       (loop (- len bytes) (conc result chunk)))
+                       (let ((chunk (substring chunk 0 bytes)))
+                         (unless (= bytes len)
+                           (warning (conc "*** waiting"
+                                          " (want " len " bytes,"
+                                          " " (- eot (current-seconds)) "s)"))
+                           (thread-sleep! 0.1))
+                         (loop (- len bytes) (conc result chunk))))
                      (file-read dw len)))
           (begin
             (print "<< " (wrt result))
