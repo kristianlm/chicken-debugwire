@@ -15,7 +15,7 @@
    (r (register (between 0 31))))
   "0000 11rd dddd rrrr")
 
-(define-instruction adiw "Add Immediate to Word"
+(define-instruction adiw "Add Immediate to Word" ;; little endian
   ((d (register (between 24 30) (cut - <> 24) half))
    (K (constant (between 0 63))))
   "1001 0110 KKdd KKKK")
@@ -119,7 +119,7 @@
   "1101 kkkk kkkk kkkk")
 
 (define-instruction rjmp "Relative Jump"
-  ((k (half (between -2048 2047))))
+  ((k ((between -2048 2047))))
   "1100 kkkk kkkk kkkk")
 
 (define-instruction ser "Set all Bits in Register"
@@ -127,8 +127,8 @@
   "1110 1111 dddd 1111" )
 
 (define-instruction sbci "Subtract Immediate with Carry SBI - Set Bit in I/O Register"
-  ((d (constant (between 0 0)))
-   (K (constant (between 0 0))))
+  ((d (register (between 16 31) (cut - <> 16)))
+   (K (constant (between 0 255))))
   "0100 KKKK dddd KKKK")
 
 (define-instruction sbrs "Skip if Bit in Register is Set"
