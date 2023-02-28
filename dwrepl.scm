@@ -7,6 +7,12 @@
         chicken.time
         srfi-1 srfi-18)
 
+(define-syntax ->
+  (syntax-rules ()
+    ((-> v) v)
+    ((-> v (proc args ...) rest ...)
+     (-> (proc v args ...) rest ...))))
+
 (load "tty.so")
 
 (define current-dw (make-parameter (file-open "/dev/ttyUSB0" open/rdwr)))
@@ -31,14 +37,23 @@
 ;; issue a break (pulling debugWire/RESET low for a few hundred µs)
 ;; this should suspend the target CPU and give us the famous #x55
 ;; reply.
-(define (dw-break!)
-  (tty-break (current-dw) (quotient 20000000 (baudrate)))
+(define (dw-break! #!optional (dw (current-dw)))
+  (dw-echo-flush! dw)
+
+  (apply
+   (lambda (chunk bytes)
+     (unless (zero? bytes)
+       (warning "lingering bytes in receive buffer:" (wrt (substring chunk 0 bytes)))))
+   (file-read dw 1024 ))
+
+  (tty-break dw (quotient 20000000 (baudrate)))
   (dw-break-expect))
 
 (tty-setup (current-dw) (baudrate))
 (dw-break!)
 
 (include "avr-asm.scm")
+(include "reader.scm")
 
 (define (wrt x) (with-output-to-string (lambda () (write x))))
 
@@ -81,10 +96,32 @@
   (bytevector (bitwise-and (arithmetic-shift value  0) #xff)
               (bitwise-and (arithmetic-shift value -8) #xff)))
 
+;;; ============================== UART ==============================
+;;;
+;;; all UART reads cause significant delays (milliseconds, it seems)
+;;; with our current tty settings. that is, in my tests, I'm seeing
+;;; that every file-read on dw lasts at least 15ms. I'm guessing
+;;; because c_cc[VTIME] > 0 or something. so we minimize number of
+;;; file-read calls as much as possible. writing does not seem to
+;;; cause delays, so we write immediately.
+;;;
+;;; since RX and TX is shared, all writes are echoed back to us
+;;; (unless there is a collision). we need to read back our echos, but
+;;; we don't want to do it immediately after writing because that
+;;; increases the number file-reads. instead, we keep track of the
+;;; expected echos and read and discard before we do a real UART read.
+;;;
+;;; This complicates things but makes it substantially faster.
+(define dw-echo "")
 
-(define dw-write-buffer "")
-
-(define (dw-read* len dw seconds timeout)
+;; raw read from UART. causes delay as we're waiting to see if more
+;; data will arrive on our.
+(define (dw-read* len #!key
+                  (dw (current-dw))
+                  (seconds 2)
+                  (timeout
+                   (lambda (str)
+                     (error (conc "dw-read: reached timeout (" seconds "s)") str))))
   (let ((eot (+ (current-seconds) seconds)))
     (let loop ((len len)
                (result ""))
@@ -94,49 +131,35 @@
               (apply (lambda (chunk bytes)
                        (let ((chunk (substring chunk 0 bytes)))
                          (unless (= bytes len)
-                           (warning (conc "*** waiting"
-                                          " (want " len " bytes,"
-                                          " " (- eot (current-seconds)) "s)"))
-                           (thread-sleep! 0.1))
+                           ;; (warning (conc "*** waiting" " (want " len " bytes," " " (- eot (current-seconds)) "s)"))
+                           (thread-yield!))
                          (loop (- len bytes) (conc result chunk))))
                      (file-read dw len)))
-          (begin
-            (print "<< " (wrt result))
-            result)))))
+          result))))
 
-(define (dw-write* #!optional (dw (current-dw)))
+;; read expected echo back. this is a bit slow, see above.
+(define (dw-echo-flush! dw)
+  (let ((str dw-echo))
+    (set! dw-echo "") ;; clear first, in case of error
+    (let* ((len (number-of-bytes str))
+           (read (dw-read* len #:dw dw #:seconds 2)))
+      (unless (equal? read str)
+        (error (conc "expected echo " (wrt str) ", got " (wrt read)))))))
 
-  ;; try to recover from unread responses
-  (let loop ((total 0))
-    (let ((readout (cadr (file-read (current-dw) (if (= 0 total) 1 1024)))))
-      (if (zero? readout)
-          (unless (= 0 total)
-            (print "dw-write* warning: nonempty buffer when writing new command (" total " bytes)"))
-          (loop (+ total readout)))))
-
-  (unless (zero? (number-of-bytes dw-write-buffer))
-    (let ((str dw-write-buffer))
-      (set! dw-write-buffer "")
-      (print ">> " (wrt str))
-      (file-write dw str)
-      (let* ((len (number-of-bytes str))
-             (read (dw-read* len dw 2 (lambda (str) (error "dw-write*: timeout")))))
-        (unless (equal? read str)
-          (error (conc "expected echo " (wrt str) ", got " (wrt read))))))))
-
-(define (dw-write str #!optional (dw current-dw))
-  (set! dw-write-buffer (conc dw-write-buffer str)))
-
-;; since RX and TX is shared, all writes are echoed back to us (unless
-;; there is a collision).
 (define (dw-read len #!key
                  (dw (current-dw))
                  (seconds 2)
                  (timeout
                   (lambda (str)
                     (error (conc "dw-read: reached timeout (" seconds "s)") str))))
-  (dw-write* dw) ;; flush out buffer to UART
-  (dw-read* len dw seconds timeout))
+  (dw-echo-flush! dw)
+  (dw-read* len #:dw dw #:seconds seconds  #:timeout timeout))
+
+(define (dw-write str #!optional (dw (current-dw)))
+  (let ((len (number-of-bytes str)))
+    (set! dw-echo (conc dw-echo str))
+    (unless (= len (file-write dw str))
+      (error (conc "dw-write: could not write " len " bytes")))))
 
 ;; ==================== flow ====================
 
@@ -152,7 +175,15 @@
   (dw-break-expect))
 
 (define (dw-continue/ret) (dw-write (bytevector #x63 #x30)) (dw-break-expect) )
-(define (dw-continue)     (dw-write (bytevector #x60 #x30)) #;(dw-break-expect) )
+(define (dw-continue #!optional (dw (current-dw)))
+  (dw-write (bytevector #x60 #x30)) ;; resume normal execution
+  (dw-echo-flush! dw))
+
+(define (dw-continue/bp bp #!key (dw (current-dw)))
+  (set! (BP) (/ bp 2))
+  (dw-write (bytevector #x61 #x30))
+  (dw-echo-flush! dw)
+  (dw-break-expect dw))
 
 ;; disable debugWirte on target (enables ISP)
 (define (dw-disable!)
@@ -248,13 +279,9 @@
 (define Z ;; Z-register
   (getter-with-setter
    (lambda () (bytes->u16le (dw-registers-read 30 2)))
-   (lambda ( value) (dw-registers-write 30 (u16le->bytes value)))))
+   (lambda (value) (dw-registers-write 30 (u16le->bytes value)))))
 
 ;; ======================================== SRAM
-(define SP
-  (getter-with-setter
-   (lambda () (bytes->u16le (dw-sram-read #x5D 2)))
-   (lambda (v) (dw-sram-write #x5D (u16le->bytes v)))))
 
 
 ;; u8 hi(int w) {return (w>>8)&0xff;}
@@ -262,23 +289,38 @@
 ;; void DwSetPC(u16 pc) {DwSend(Bytes(0xD0, hi(pc)|AddrFlag(), lo(pc)));}
 ;; void DwSetBP(u16 bp) {DwSend(Bytes(0xD1, hi(bp)|AddrFlag(), lo(bp)));}
 
-(define (dw-sram-read start len)
-  (unless (<= len 128) (error "dw-sram-read: len must be <=128" len))
+;; unsafe. any read across DWDR, the internal debugwire register,
+;; yields in no response. make sure to avoid doing this.
+(define (dw-sram-read* start len)
+  ;;(unless (<= len 128) (error "dw-sram-read: len must be <=128" len))
   (set! (Z) start)
   (set! (PC) 0)
   (set! (BP) (* 2 len))
   (dw-write (bytevector #x66 #xC2 #x00 #x20))
   (dw-read len))
 
-;; (dw-sram-read SPMCSR 1)
+(define DWDR #x42) ;; TODO: for attiny85 only
+(define dw-sram-read
+  (-> dw-sram-read*
+      (reader-mask DWDR 1 (lambda (s l) "\x00") (flip conc) "")
+      ;; (reader-chunkify 64 (flip conc) "")
+      ))
+
+;; having masked away the unsafe DWDR, we can now:
+;; (dw-sram-read 0 512)
 
 (define (dw-sram-write start bytes)
   (let ((len (number-of-bytes bytes)))
-    (unless (<= len 128) (error "dw-sram-read: len must be <=128" len))
+    ;;(unless (<= len 128) (error "dw-sram-read: len must be <=128" len))
     (set! (Z) start)
     (set! (PC) 1)
     (set! (BP) (+ 1 (* 2 len)))
     (dw-write (bytevector #x66 #xC2 #x04 #x20 bytes))))
+
+(define SP
+  (getter-with-setter
+   (lambda () (bytes->u16le (dw-sram-read #x5D 2)))
+   (lambda (v) (dw-sram-write #x5D (u16le->bytes v)))))
 
 ;; ====================
 
@@ -294,14 +336,25 @@
 
 ;; ==================== flash ====================
 
-(define (dw-flash-read start len)
+;; unsafe: keep len <= 64 (for some devices it seems)
+(define (dw-flash-read* start len)
   (set! (Z) start)
   (set! (PC) 0)
   (set! (BP) (* 2 len))
   (dw-write (bytevector #x66 #xC2 #x02 #x20))
   (dw-read len))
 
-;; the hardware only supports erasing 1 page of flash at a time.
+;; read flash chunks, because
+;; https://github.com/dcwbrown/dwire-debug/blob/9b98597ce53fa49637909a16d1c63b8f314c1ce1/src/commands/NonVolatile.c#L101. I
+;; don't think this applies to non-bootsector chips, but I haven't
+;; been able to read more than #x800 bytes of flash from my attiny85.
+;;
+;; (print (string->blob (dw-flash-read 0 #x2000)))
+(define dw-flash-read
+  (-> dw-flash-read*
+      (reader-chunkify 64 (flip conc) "")))
+
+;; The hardware only supports erasing 1 page of flash at a time.
 (define (dw-flash-erase/page start)
   (define CTPB  (arithmetic-shift 1 4)) ;; Clear Temporary Page Buffer
   (define PGERS (arithmetic-shift 1 1))
@@ -313,8 +366,6 @@
   (dw-exec (out (adr->io SPMCSR) 29))
   (set! (PC) 0)
   (dw-exec (spm)))
-
-;; (dw-flash-page-erase #x140)
 
 ;; 19.9.1: If only SPMEN is written, the following SPM instruction
 ;; will store the value in R1:R0 in the temporary page buffer
@@ -372,80 +423,3 @@
   ;; TODO: wait for SPM done
 
   (thread-sleep! .2))
-
-
-
-
-(dw-flash-write/page
- #x140 (bytevector (ldi 17 101) ;; e
-                   (nop)
-                   (nop)
-                   (nop)
-                   (nop)
-                   (nop)
-                   (ldi 18 102) ;; f
-                   (nop)
-                   (nop)
-                   (nop)
-                   (nop)
-                   (nop)
-                   (ret)
-                   (rjmp -8)
-                   (nop)
-                   (ldi 17 103) ;; g
-                   (ldi 18 104) ;; h
-                   (break)))
-
-;; (dw-flash-erase/page #x140)
-(string->blob (dw-flash-read #x140 64))
-
-(SP)
-(dw-exec (pop 16))
-(set! (r 16) -1)
-(dw-exec (push 16))
-(r 16)
-
-
-(begin
-  (define (status!)
-    (let ((pc (PC)))
-      (print "status: pc=" pc (list #:r16:19 (wrt (dw-registers-read 16 4))))))
-
-  (dw-registers-write 16 "    ")
-  (status!)
-  (set! (PC) (/ #x140 2))
-  (dw-continue/ret)
-  (thread-sleep! 0.5)
-  (dw-break!)
-  (status!)
-
-  (thread-sleep! 0.5))
-
-
-;; DO NOT EVAL THIS:
-;; ITS VERY STRANGE, THE FUSES SEEM TO CHANGE!
-;; the SPI interface becomes active :-(
-;; (dw-flash-write (* 64 12) "h")
-
-(begin
-  (dw-sram-write 500 "_ELLO")
-  (set! (Z) 500)
-  (dw-exec (ldi 24 (char->integer #\h)))
-  (dw-exec (stZ 24))
-  (dw-sram-read 500 5))
-
-(begin
-  (print "SP = " (SP))
-  (dw-exec (pop 0))
-  (dw-exec (pop 1))
-  (print "SP = " (SP))
-  (print "r01: " (list (r 0) (r 1))))
-
-(dw-exec (eor 24 24))
-(begin ;; yey!
-  (dw-exec (ldi 24 66))
-  (dw-registers-read 24 1))
-
-(string->blob (dw-flash-read 50 170))
-
-(string->list (dw-sram-read (SP) 2))
