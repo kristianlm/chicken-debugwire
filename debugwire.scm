@@ -8,13 +8,9 @@
         (only srfi-1 append-map)
         srfi-18)
 
-(define-syntax ->
-  (syntax-rules ()
-    ((-> v) v)
-    ((-> v (proc args ...) rest ...)
-     (-> (proc v args ...) rest ...))))
-
 (include "tty.scm")
+(include "avr-asm.scm")
+(include "reader.scm")
 
 (define current-dw (make-parameter #f))
 (define (baudrate) (quotient 4000000 64))
@@ -49,9 +45,6 @@
 
   (tty-break dw (quotient 20000000 (baudrate)))
   (dw-break-expect))
-
-(include "avr-asm.scm")
-(include "reader.scm")
 
 (define (wrt x) (with-output-to-string (lambda () (write x))))
 
@@ -300,10 +293,7 @@
 
 (define DWDR #x42) ;; TODO: for attiny85 only
 (define dw-sram-read
-  (-> dw-sram-read*
-      (reader-mask DWDR 1 (lambda (s l) "\x00") (flip conc) "")
-      ;; (reader-chunkify 64 (flip conc) "")
-      ))
+  (reader-mask dw-sram-read* DWDR 1 (lambda (s l) "\x00") (flip conc) ""))
 
 ;; having masked away the unsafe DWDR, we can now:
 ;; (dw-sram-read 0 512)
@@ -350,8 +340,7 @@
 ;;
 ;; (print (string->blob (dw-flash-read 0 #x2000)))
 (define dw-flash-read
-  (-> dw-flash-read*
-      (reader-chunkify 64 (flip conc) "")))
+  (reader-chunkify dw-flash-read* 64 (flip conc) ""))
 
 ;; The hardware only supports erasing 1 page of flash at a time.
 (define (dw-flash-erase/page start)
