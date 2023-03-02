@@ -1,0 +1,52 @@
+
+* AVR debugWIRE library
+
+This is a [[https://call-cc.org][Chicken Scheme 5]] library which lets you operate a AVR
+microcontroller using its on-board [[https://en.wikipedia.org/wiki/DebugWIRE][debugWIRE]] facility. It implements
+parts of the proprietary serial protocol, and exposes an API that
+allows you to:
+
+- Read and write device registers and SRAM
+- Read and write device flash memory
+- Start and stop device CPU
+
+It's based off of the wonderful work of [[http://www.ruemohr.org/docs/debugwire.html][RikusW]], [[https://github.com/dcwbrown/dwire-debug][David C W Brown]] and
+[[https://github.com/dwtk/dwtk][Rafael G. Martins]]. The typical use of debugWIRE is indirectly through
+[[https://en.wikipedia.org/wiki/GNU_Debugger][gdb]], where the aforementioned projects shine. This library, however,
+takes a slightly different approach and tries to give you a Scheme
+REPL experience when working with these microcontrollers.
+
+The project stage is experimental, at best! And only the ATtiny85
+microcontroller is currently supported. If you actually just want to
+start with debugWIRE, I'd strongly recommend the projects above.
+
+** Getting started
+
+You'll need to enable debugWIRE on your target device. This means
+programming the ~DWEN~ bit, which you'll probably have to do with the
+usual ICSP setup and then something like:
+
+#+begin_src bash
+> avrdude -p attiny85 -U hfuse:w:0x9F:m
+#+end_src
+
+Once the target is debugWIRE-enabled, the RESET pin becomes available
+for debugWIRE commands. Pulling this line low for a few microseconds
+should give you the famous ~0x55~ greeting:
+
+[[./images/debugwire-55-greeting.png]]
+
+On can pull the line low manually, and then check for a 55 response on
+a scope before fighting UART drivers and baud rates. A prolonged low
+signal like this is invalid serial communication, and is called a
+~break~, hence the red ~?~ after 00. It's used to, unsurprisingly,
+break the target device's CPU. From there on, you can issue various
+commands and is where this library may prove useful.
+
+Please follow the hardware setup guide at [[https://github.com/dcwbrown/dwire-debug/#ft232rch340-usb-uart-hardware][dwire-debug]] for the UART
+setup. You'll only need a good USB-UART adapter and a diode (plus
+something to enable debugWIRE).
+
+** API
+
+Not yet documented, sorry. Please read [[debugwire.scm]].
