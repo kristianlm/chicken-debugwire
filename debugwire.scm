@@ -5,7 +5,8 @@
         chicken.memory.representation
         chicken.port
         chicken.time
-        srfi-1 srfi-18)
+        (only srfi-1 append-map)
+        srfi-18)
 
 (define-syntax ->
   (syntax-rules ()
@@ -13,9 +14,9 @@
     ((-> v (proc args ...) rest ...)
      (-> (proc v args ...) rest ...))))
 
-(load "tty.so")
+(include "tty.scm")
 
-(define current-dw (make-parameter (file-open "/dev/ttyUSB0" open/rdwr)))
+(define current-dw (make-parameter #f))
 (define (baudrate) (quotient 4000000 64))
 
 ;; get the "pong" reply from target which is issued immediately after
@@ -48,9 +49,6 @@
 
   (tty-break dw (quotient 20000000 (baudrate)))
   (dw-break-expect))
-
-(tty-setup (current-dw) (baudrate))
-(dw-break!)
 
 (include "avr-asm.scm")
 (include "reader.scm")
@@ -208,9 +206,10 @@
              #xD1 (u16be->bytes (+ start (number-of-bytes regs))) ;; BP
              #x66 #xC2 #x05 #x20 regs)))
 
-(define (dw-signature) ;; don't really know what this is
+;; https://github.com/dcwbrown/dwire-debug/blob/084c3332522fc781dd3e2316335d8539e9064338/src/dwire/Connection.c#L48
+(define (dw-signature)
   (dw-write (bytevector #xF3))
-  (bytes->u16 (dw-read 2)))
+  (bytes->u16be (dw-read 2)))
 
 (define PC ;; program counter (aka instruction pointer)
   (getter-with-setter
@@ -423,3 +422,8 @@
   ;; TODO: wait for SPM done
 
   (thread-sleep! .2))
+
+(define (dw-open! path)
+  (current-dw (file-open path open/rdwr))
+  (tty-setup (current-dw) (baudrate))
+  (dw-break!))
