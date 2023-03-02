@@ -2,23 +2,6 @@
         chicken.string
         srfi-4)
 
-(define (between lower upper)
-  (lambda (r)
-    (unless (<= lower r upper) (error (conc "out of range [ " lower " " upper "]") r))
-    r))
-
-(define (register r) r)
-(define (constant k) k)
-(define (flashadr a)
-  (when (odd? a) (error "odd address operand" a))
-  (arithmetic-shift a -1))
-
-(define (byte->word k)
-  (if (even? k)
-      (arithmetic-shift k -1)
-      (error "operand must be even" k)))
-
-
 ;; I'd love to keep the instruction as an integer, but then we
 ;; wouldn't know if it originally was 16-bit or 32-bit. Therefore, we
 ;; return blobs here. This returns the bytes in the order as stored on
