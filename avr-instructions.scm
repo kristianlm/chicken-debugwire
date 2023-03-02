@@ -56,6 +56,10 @@
    (A (constant (between 0 63))))
   "1011 0AAd dddd AAAA")
 
+(define-instruction inc "Increment"
+  ((d (register (between 0 31))))
+  "1001 010d dddd 0011")
+
 (define-instruction jmp "Jump" ;; byte-address => word address (16bit)
   ((k (constant (between 0 #x400000))))
   "1001 010k kkkk 110k kkkk kkkk kkkk kkkk")

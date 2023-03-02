@@ -64,7 +64,7 @@
     (define-instruction icall  "Indirect Call to Subroutine" ()    "1001 0101 0000 1001")
     (define-instruction ijmp   "Indirect Jump" ()    "1001 0100 0000 1001")
     ;;(define-instruction     in "Load an I/O Location to Register" (A d) "1011 0AAd dddd AAAA")
-    (define-instruction inc    "Increment" (d)   "1001 010d dddd 0011")
+    ;;(define-instruction inc    "Increment" (d)   "1001 010d dddd 0011")
     (define-instruction lac    "Load and Clear" (r)   "1001 001r rrrr 0110")
     (define-instruction las    "Load and Set" (r)   "1001 001r rrrr 0101")
     (define-instruction lat    "Load and Toggle" (r)   "1001 001r rrrr 0111")
