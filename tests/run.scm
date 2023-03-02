@@ -2,7 +2,7 @@
 
 (test-group
  "avr-instructions instruction->procedure"
- (test #${af}   ((instruction->procedure _ _ () "1010 1111")))
+ (test #${55af}  ((instruction->procedure _ _ () "1010 1111    0101 0101")))
  (test #${ff 0f} (add 31 31))
  (test #${00 0c} (add  0  0))
  (test #${ff 27} (eor 31 31))
