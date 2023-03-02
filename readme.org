@@ -53,11 +53,56 @@ setup. You'll only need a good USB-UART adapter and a diode (plus
 something to enable debugWIRE). Your adapter needs to be able to
 generate a proper break signal and baudrates that match the target.
 
-*** A REPL example
+*** Example REPL session
 
 #+begin_src scheme
+  > git clone chicken-debugwire && cd chicken-debugwire
+  > chicken-install .
+  > rlwrap csi
+
+  ;; let's get ready
+  #;> (import avr.debugwire avr.asm chicken.blob)
+  #;> (dw-open! "/dev/ttyUSB1" (/ 4000000 64))
+  #;> (dw-break!)
+  dw-break-expect: serial read 85
+
+  ;; CPU is now halted. let's have a look at register 24:
+  #;> (r 24)
+  0
+  #;> (set! (r 24) 100)
+  #;> (r 24)
+  100
+  #;> inc
+  #<procedure (inc d)>
+  #;> (inc 24)
+  #${8395}                  ;; <-- machine code / opcode for inc 24
+  #;> (dw-exec (inc 24))    ;; let's increment r24!
+  #;> (r 24)
+  101
+  #;> (dw-exec (inc 24))    ;; let's repeat this for sheer joy
+  #;> (r 24)
+  102
 #+end_src
 
 ** API
 
-Not yet documented, sorry. Please read [[debugwire.scm]].
+Not yet documented, sorry. Please read [[debugwire.scm]]. Below are some
+of the ~getter-with-setter~ procedures. They expose various named
+variables of different sizes for convenience. They're typically used
+like this, for example: eg. ~(r 0)~ or ~(set! (r 0) 255)~ to access
+~r0~.
+
+| name      | size | where    | description                                                                                                        |
+|-----------+------+----------+--------------------------------------------------------------------------------------------------------------------|
+| (PC)      |    8 | dw       | aka Program Counter. Used/overwritten in various occations. Read immediately after dw-break! to get the "real" PC. |
+| (BP)      |    8 | dw       | aka Break-point. Used/overwritten in various places. Set to flash address before dw-continue* for "run to cursor". |
+| (IR)      |    8 | dw       | aka Instruction register. Load with arbitrary 16-bit word for immediate execution.                                 |
+| (r /x/)   |    8 | register | raw register access, where /x/ is 0 - 31.                                                                          |
+| (X)       |   16 | register | ~(r 26)~ and ~(r 27)~                                                                                              |
+| (Y)       |   16 | register | ~(r 28)~ and ~(r 29)~                                                                                              |
+| (Z)       |   16 | register | ~(r 30)~ and ~(r 31)~                                                                                              |
+| (SP)      |   16 | sram     | aka Stack Pointer.                                                                                                 |
+| (PINB)    |    8 | sram     | Port B Input Pins Address (~#x16~)                                                                                 |
+| (DDRB)    |    8 | sram     | Port B Data Direction Register (~#x17~)                                                                            |
+| (PORTB)   |    8 | sram     | Port B Data Register (~#x18~)                                                                                      |
+
