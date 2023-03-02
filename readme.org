@@ -6,9 +6,10 @@ microcontroller using its on-board [[https://en.wikipedia.org/wiki/DebugWIRE][de
 parts of the proprietary serial protocol, and exposes an API that
 allows you to:
 
+- Start and stop device CPU
 - Read and write device registers and SRAM
 - Read and write device flash memory
-- Start and stop device CPU
+- Execute arbitrary assembly instructions (16-bit opcodes only)
 
 It's based off of the wonderful work of [[http://www.ruemohr.org/docs/debugwire.html][RikusW]], [[https://github.com/dcwbrown/dwire-debug][David C W Brown]] and
 [[https://github.com/dwtk/dwtk][Rafael G. Martins]]. The typical use of debugWIRE is indirectly through
@@ -27,7 +28,7 @@ programming the ~DWEN~ bit, which you'll probably have to do with the
 usual ICSP setup and then something like:
 
 #+begin_src bash
-> avrdude -p attiny85 -U hfuse:w:0x9F:m
+  > avrdude -p attiny85 -U hfuse:w:0x9F:m
 #+end_src
 
 Once the target is debugWIRE-enabled, the RESET pin becomes available
@@ -37,15 +38,25 @@ should give you the famous ~0x55~ greeting:
 [[./images/debugwire-55-greeting.png]]
 
 On can pull the line low manually, and then check for a 55 response on
-a scope before fighting UART drivers and baud rates. A prolonged low
-signal like this is invalid serial communication, and is called a
-~break~, hence the red ~?~ after 00. It's used to, unsurprisingly,
-break the target device's CPU. From there on, you can issue various
-commands and is where this library may prove useful.
+a scope before fighting UART drivers and baud rates. This fixed
+response can be used to detect the target baud rate (usually F_CPU /
+64).
+
+A prolonged low signal like this is an invalid serial frame. It's
+called a ~break~, hence the red ~?~ on my scope. It's used to,
+unsurprisingly, break the running target CPU. Once stopped, you can
+issue various commands like reading registers and executing ad-hoc
+instructions. This is where this library comes into play.
 
 Please follow the hardware setup guide at [[https://github.com/dcwbrown/dwire-debug/#ft232rch340-usb-uart-hardware][dwire-debug]] for the UART
 setup. You'll only need a good USB-UART adapter and a diode (plus
-something to enable debugWIRE).
+something to enable debugWIRE). Your adapter needs to be able to
+generate a proper break signal and baudrates that match the target.
+
+*** A REPL example
+
+#+begin_src scheme
+#+end_src
 
 ** API
 
