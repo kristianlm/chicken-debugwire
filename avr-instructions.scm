@@ -57,7 +57,7 @@
   "1011 0AAd dddd AAAA")
 
 (define-instruction jmp "Jump" ;; byte-address => word address (16bit)
-  ((k (address (even (between 0 #x400000)))))
+  ((k (constant (between 0 #x400000))))
   "1001 010k kkkk 110k kkkk kkkk kkkk kkkk")
 
 (define-instruction ldi "Load Immediate"
