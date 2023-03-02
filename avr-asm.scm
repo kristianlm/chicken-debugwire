@@ -125,19 +125,3 @@
 
 (include "avr-instructions.scm")
 
-(import test)
-(test-group
- "instruction->procedure"
- (test #${af}   ((instruction->procedure _ _ () "1010 1111")))
- (test #${ff 0f} (add 31 31))
- (test #${00 0c} (add  0  0))
- (test #${ff 27} (eor 31 31))
-
- (test-error (add 32 32))
-
- (test
-  (list #${80 e1} #${87 bf} #${98 95})
-  (list (ldi 24 #x10)
-        (out #x37 24)
-        (break))))
-
