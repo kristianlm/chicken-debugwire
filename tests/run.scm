@@ -1,8 +1,7 @@
 (import test avr.asm)
 
 (test-group
- "avr-instructions instruction->procedure"
- (test #${55af}  ((instruction->procedure _ _ () "1010 1111    0101 0101")))
+ "avr.asm"
  (test #${ff 0f} (add 31 31))
  (test #${00 0c} (add  0  0))
  (test #${ff 27} (eor 31 31))
@@ -15,7 +14,16 @@
         (out #x37 24)
         (break))))
 
+(test-group
+ "instruction->procedure"
+ (import chicken.bitwise)
+ (test #${55af}  ((instruction->procedure _ _ () "1010 1111    0101 0101"))))
+
+
+;; ========================================
+
 (import avr.debugwire)
+
 (test-group
  "reader-mask"
  (define j
@@ -35,3 +43,4 @@
  (test '((#:A 7 1)) (j 7 1))           ;; |       -|
  )
 
+(test-exit)
