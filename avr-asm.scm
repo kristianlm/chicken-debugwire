@@ -1,6 +1,5 @@
 (import chicken.bitwise
         chicken.string
-        srfi-1
         srfi-4)
 
 (define (between lower upper)
