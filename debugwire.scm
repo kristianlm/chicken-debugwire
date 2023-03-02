@@ -417,4 +417,4 @@
 (define (dw-open! path baudrate*)
   (baudrate baudrate*)
   (current-dw (file-open path open/rdwr))
-  (tty-setup (current-dw)))
+  (tty-setup (current-dw) (baudrate)))
