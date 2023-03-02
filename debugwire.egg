@@ -1,12 +1,17 @@
 ;; -*- scheme -*-
-((synopsis "AVR microcontroller DebugWire")
+((synopsis "AVR microcontroller debugWIRE library")
  (author "Kristian Lein-Mathisen")
  (category tools)
- (license "?")
- (dependencies srfi-1)
+ (license "GPL")
+ (dependencies srfi-1 srfi-18)
  (foreign-dependencies)
  (test-dependencies test)
- (components (extension debugwire
-                        (source "debugwire-module.scm")
-                        (source-dependencies "debugwire.scm" "reader.scm" "tty.scm"
-                                             "avr-asm.scm" "avr-instructions.scm"))))
+ (components
+  (extension avr.debugwire
+             (source "module-avr-debugwire.scm")
+             (source-dependencies
+              "debugwire.scm" "reader.scm" "tty.scm"))
+  (extension avr.asm
+             (source "module-avr-asm.scm")
+             (source-dependencies
+              "avr-asm.scm" "avr-instructions.scm"))))

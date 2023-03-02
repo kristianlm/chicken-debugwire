@@ -6,14 +6,15 @@
         chicken.port
         chicken.time
         (only srfi-1 append-map)
-        srfi-18)
+        srfi-4
+        srfi-18
+        (only avr.asm adr->io spm out adiw))
 
 (include "tty.scm")
-(include "avr-asm.scm")
 (include "reader.scm")
 
 (define current-dw (make-parameter #f))
-(define (baudrate) (quotient 4000000 64))
+(define baudrate   (make-parameter #f))
 
 ;; get the "pong" reply from target which is issued immediately after
 ;; break signals.
@@ -31,7 +32,7 @@
           (loop)
           c))))
 
-;; issue a break (pulling debugWire/RESET low for a few hundred µs)
+;; issue a break (pulling debugWIRE/RESET low for a few hundred µs)
 ;; this should suspend the target CPU and give us the famous #x55
 ;; reply.
 (define (dw-break! #!optional (dw (current-dw)))
@@ -219,7 +220,7 @@
    (lambda (value) (dw-write (bytevector #xD1 (u16be->bytes value))))))
 
 ;; on flash, values are stored little-endian. when transferring over
-;; debugWire, however, the instruction register seems to be
+;; debugWIRE, however, the instruction register seems to be
 ;; big-endian. hence the noise below.
 (define (->ir value)
   (cond ((number? value) (u16be->bytes value))
@@ -412,7 +413,7 @@
 
   (thread-sleep! .2))
 
-(define (dw-open! path)
+(define (dw-open! path baudrate*)
+  (baudrate baudrate*)
   (current-dw (file-open path open/rdwr))
-  (tty-setup (current-dw) (baudrate))
-  (dw-break!))
+  (tty-setup (current-dw)))
