@@ -1,6 +1,7 @@
 ;;; misc utilities for handling (*-read start len) procedures. many of
 ;;; them have limmits on length and unsafe regions.
 
+;; how can I simplify/combine these?
 (define (reader-chunkify reader default-chunksize kons initial)
   (lambda (start len #!key (chunksize default-chunksize))
     (let loop ((start start)
@@ -12,6 +13,16 @@
             (loop next (- len size)
                   (kons result (reader start size))))
           result))))
+
+(define (writer-chunkify writer default-chunksize)
+  (lambda (start bytes #!key (chunksize default-chunksize))
+    (let loop ((start start)
+               (bytes bytes))
+      (when (> (number-of-bytes bytes) 0)
+        (let* ((size (min chunksize (number-of-bytes bytes)))
+               (next (+ start size)))
+          (writer start (substring bytes 0 size))
+          (loop next (substring bytes size)))))))
 
 ;; replace data from reader (taking arguments start len) in range
 ;; start2 len2 with data from reader2.

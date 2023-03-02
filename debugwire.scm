@@ -299,7 +299,7 @@
 ;; having masked away the unsafe DWDR, we can now:
 ;; (dw-sram-read 0 512)
 
-(define (dw-sram-write start bytes)
+(define (dw-sram-write* start bytes)
   (let ((len (number-of-bytes bytes)))
     ;;(unless (<= len 128) (error "dw-sram-read: len must be <=128" len))
     (set! (Z) start)
@@ -307,6 +307,7 @@
     (set! (BP) (+ 1 (* 2 len)))
     (dw-write (bytevector #x66 #xC2 #x04 #x20 bytes))))
 
+(define dw-sram-write (writer-chunkify dw-sram-write* 128))
 (define SP
   (getter-with-setter
    (lambda () (bytes->u16le (dw-sram-read #x5D 2)))
