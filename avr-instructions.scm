@@ -92,9 +92,9 @@
   ()
   "0000 0000 0000 0000")
 
-(define-instruction or "Logical OR"
-  ((d (register 0 31))
-   (r (register 0 31)))
+(define-instruction or_ "Logical OR"
+  ((d (register (between 0 31)))
+   (r (register (between 0 31))))
   "0010 10rd dddd rrrr")
 
 (define-instruction out "Store Register to I/O Location"
