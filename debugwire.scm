@@ -251,11 +251,6 @@
    (lambda (register)       (bytes->u8 (dw-registers-read register 1)))
    (lambda (register value) (dw-registers-write register (bytevector value)))))
 
-(define r24
-  (getter-with-setter
-   (lambda ()      (dw-registers-read  24 1))
-   (lambda (value) (dw-registers-write 24 (bytevector value)))))
-
 ;; OBS: these are little-endian
 
 (define X ;; X-register
@@ -314,6 +309,11 @@
    (lambda (v) (dw-sram-write #x5D (u16le->bytes v)))))
 
 ;; ====================
+
+(define PINB
+  (getter-with-setter
+   (lambda () (bytes->u8 (dw-sram-read #x36 1)))
+   (lambda (v) (dw-sram-write #x36 (u8->bytes v)))))
 
 (define DDRB
   (getter-with-setter
