@@ -62,17 +62,19 @@
 
 (define-instruction jmp "Jump" ;; byte-address => word address (16bit)
   ((k (constant (between 0 #x400000))))
-  "1001 010k kkkk 110k kkkk kkkk kkkk kkkk")
+  "1001 010k kkkk 110k
+   kkkk kkkk kkkk kkkk")
 
 (define-instruction ldi "Load Immediate"
   ((d (register (between 16 31) (cut - <> 16)))
    (K (constant (between 0 255))))
-  "1110 KKKK dddd KKKK" )
+  "1110 KKKK dddd KKKK")
 
 (define-instruction lds "Load Direct from Data Space"
   ((d (register (between 0 65535)))
    (k (constant (between 0 65535))))
-  "1001 000d dddd 0000 kkkk kkkk kkkk kkkk")
+  "1001 000d dddd 0000
+   kkkk kkkk kkkk kkkk")
 
 (define-instruction ldZ "Load Indirect From Data Space to Register using Z"
   ((d (register (between 0 31))))
@@ -147,7 +149,8 @@
 (define-instruction sts "Store Direct to Data Space"
   ((k (constant (between 0 65535)))
    (d (register (between 0 31))))
-  "1001 001d dddd 0000 kkkk kkkk kkkk kkkk")
+  "1001 001d dddd 0000
+   kkkk kkkk kkkk kkkk")
 
 (define-instruction stZ "Store Indirect From Register to Data Space using Index Z"
   ((r (register (between 0 31))))
