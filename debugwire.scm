@@ -18,19 +18,20 @@
 
 ;; get the "pong" reply from target which is issued immediately after
 ;; break signals.
-(define (dw-break-expect #!optional (dw (current-dw)))
+(define (dw-break-expect #!key
+                         (wait (lambda () (thread-yield!)))
+                         (dw (current-dw)))
   (let loop ()
     (let ((c (apply
               (lambda (str bytes)
                 (if (equal? 0 bytes)
-                    (error "unexpected EOF")
+                    (begin (wait) #f)
                     (char->integer (string-ref str 0))))
               (file-read dw 1))))
-      (print "dw-break-expect: serial read " c)
-      (if (or (equal? c 0)
-              (equal? c 255))
-          (loop)
-          c))))
+      (print "dw-break-expect: serial read " (and c (integer->char c)) " (" c ")")
+      (if (equal? c 85)
+          c
+          (loop)))))
 
 ;; issue a break (pulling debugWIRE/RESET low for a few hundred µs)
 ;; this should suspend the target CPU and give us the famous #x55
