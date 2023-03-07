@@ -43,4 +43,27 @@
  (test '((#:A 7 1)) (j 7 1))           ;; |       -|
  )
 
+(test-group
+ "assert-page/single"
+
+ (test (when #f) (assert-page/single 10  8 1))
+ (test (when #f) (assert-page/single 10  9 1))
+ (test (when #f) (assert-page/single 10 10 1))
+ (test (when #f) (assert-page/single 10 11 1))
+ (test (when #f) (assert-page/single 10 12 1))
+
+
+ (test (when #f) (assert-page/single 10  8 2))
+ (test-error     (assert-page/single 10  9 2))
+ (test (when #f) (assert-page/single 10 10 2))
+ (test (when #f) (assert-page/single 10 11 2))
+ (test (when #f) (assert-page/single 10 12 2))
+
+
+ (test (when #f) (assert-page/single 10  0  8))
+ (test (when #f) (assert-page/single 10  0  9))
+ (test (when #f) (assert-page/single 10  0 10))
+ (test-error     (assert-page/single 10  0 11))
+ (test-error     (assert-page/single 10  0 12)))
+
 (test-exit)

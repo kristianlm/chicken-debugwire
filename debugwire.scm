@@ -357,16 +357,28 @@
   (set! (PC) 0)
   (dw-exec (spm)))
 
-;; 19.9.1: If only SPMEN is written, the following SPM instruction
-;; will store the value in R1:R0 in the temporary page buffer
-;; addressed by the Z-pointer.
+(define (assert-page/single pagesize start len)
+  (unless (<= len pagesize)
+    (error (conc "dw-flash-write/page: data size (" len ") "
+                 "must be < pagesize (" pagesize ")")))
+
+  (let* ((end (+ start len -1))
+         (start-page (quotient start pagesize))
+         (end-page   (quotient end   pagesize)))
+    (unless (= start-page end-page)
+      (error (conc "dw-flash-write/page: data crosses flash page boundary at address "
+                   (* end-page pagesize))))))
+
+;; store data in flash. data is effectively bitwise-and'ed with any
+;; existing data on the flash as no erase is performed.
 ;;
-;; TODO: check data size against page bounds at start
+;; if data crosses flash page boundary, and error is thrown.
 (define (dw-flash-write/page start data)
   (define CTPB  (arithmetic-shift 1 4)) ;; Clear Temporary Page Buffer
   (define PGWRT (arithmetic-shift 1 2)) ;; Page Write
   (define SPMEN (arithmetic-shift 1 0)) ;; Store Program Memory Enable
   (define SPMCSR #x57) ;; Store Prgram Memory Control and Status Register
+  (define PAGESIZE #x40) ;; TODO: paramtereize for chip (≠ attiny85)
 
   (set! data (if (blob? data)
                  (blob->u8vector/shared data)
@@ -375,6 +387,7 @@
   (define len (cond ((u8vector? data) (u8vector-length data))
                     (else (number-of-bytes data))))
 
+  (assert-page/single PAGESIZE start len)
   ;; must upload data 16-bits at a time. #xFF should not affect the
   ;; flash, so we can use that for the potentially missing byte.
   (define (byte n)
