@@ -181,6 +181,8 @@
   (dw-write (bytevector #x61 #x30))
   (dw-break-expect dw))
 
+;; TODO: #x79 -- used before resuming a SW BP define dw-continue/exec maybe?
+
 ;; disable debugWirte on target (enables ISP)
 (define (dw-disable!)
   (dw-write (bytevector #x06)))
@@ -465,6 +467,15 @@
    (lambda (start) ;; TODO: parameterize flash size
      (print start (string->blob (dw-flash-read start chunksize))))
    (map (cut * chunksize <>) (iota (quotient #x2000 chunksize)))))
+
+;; TODO: change baud rates
+;; If I do:
+;; (begin
+;;   (dw-write (bytevector #xA0))
+;;   (dw-break-expect))
+;; the baud rate is changed to 1MHz. If I
+;; (tty-setup (current-dw) 1000000), things work again.
+;; TODO: detect baudrate (possible since we always have the 55 response)
 
 ;; ========================================
 
