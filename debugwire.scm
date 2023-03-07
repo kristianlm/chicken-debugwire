@@ -249,7 +249,8 @@
 ;; execute word
 (define (dw-exec word)       (dw-write (bytevector #xD2 (->ir word) #x23)))
 ;; execute word, and target replies with break when complete
-(define (dw-exec/break word) (dw-write (bytevector #xD2 (->ir word) #x33)))
+(define (dw-exec/break word) (dw-write (bytevector #xD2 (->ir word) #x33))
+  (dw-break-expect))
 
 ;; ======================================== common registers
 
@@ -362,8 +363,7 @@
   (set! (Z) start)
   (dw-exec (out (adr->io SPMCSR) 29))
   (set! (PC) 0)
-  (dw-exec/break (spm))
-  (dw-break-expect))
+  (dw-exec/break (spm)))
 
 (define (assert-page/single pagesize start len)
   (unless (<= len pagesize)
