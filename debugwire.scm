@@ -433,6 +433,41 @@
 
   (thread-sleep! .2))
 
+;; returns either flash address where data can be written to, or
+;; #f. this is probably a dangerous little game to play, but let's see
+;; where it takes us!
+(define (dw-flash-allocating data)
+  (let* ((len (number-of-bytes data))
+         (empty (make-string len #\xff))
+         (limit #x2000) ;; <-- TODO go beyond attiny85
+         (pagesize #x40))
+    (let loop ((start pagesize))
+      (let ((flash (dw-flash-read start len)))
+        (if (or (equal? flash empty) ;; TODO: just check if (bitwise-and flash data) = data
+                (equal? flash data))
+            start
+            (if (>= start limit)
+                #f ;; no place left, time to erase something
+                (loop (+ start pagesize))))))))
+
+;; find a free spot for data and write it to flash. returns #f if
+;; there's not more room.
+(define (dw-flash-append data)
+  (let ((start (dw-flash-allocating data)))
+    ;; TODO: don't issue write call if data is present already
+    (when start (dw-flash-write/page start data))
+    start))
+
+(define (dw-flash-dump #!key
+                       (chunksize 32)
+                       (print (lambda (a b) (print "#x" (number->string a 16) " " b))))
+  (for-each
+   (lambda (start) ;; TODO: parameterize flash size
+     (print start (string->blob (dw-flash-read start chunksize))))
+   (map (cut * chunksize <>) (iota (quotient #x2000 chunksize)))))
+
+;; ========================================
+
 (define (dw-open! path baudrate*)
   (baudrate baudrate*)
   (current-dw (file-open path open/rdwr))
