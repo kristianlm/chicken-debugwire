@@ -86,10 +86,10 @@ generate a proper break signal and baudrates that match the target.
 
 ** API
 
-Not yet documented, sorry. Please read [[debugwire.scm]]. Below are some
-of the ~getter-with-setter~ procedures. They expose various named
-variables of different sizes for convenience. They're typically used
-like this, for example: eg. ~(r 0)~ or ~(set! (r 0) 255)~ to access
+Not yet documented, sorry. Please read [[debugwire.scm]]. However,
+below are some of the ~getter-with-setter~ procedures. They expose
+various named variables of different sizes for convenience. They're
+typically used like this: ~(r 0)~ or ~(set! (r 0) 255)~ to access
 ~r0~.
 
 | name      | size | where    | description                                                                                                        |
@@ -106,3 +106,27 @@ like this, for example: eg. ~(r 0)~ or ~(set! (r 0) 255)~ to access
 | (DDRB)    |    8 | sram     | Port B Data Direction Register (~#x17~)                                                                            |
 | (PORTB)   |    8 | sram     | Port B Data Register (~#x18~)                                                                                      |
 
+** TODOs
+
+This list would be seriously long for this library to turn into
+something of real-world value. So here are just a few major points:
+
+*** Restoring target to working order before ~dw-continue~
+
+Since we not only mutate the debugWIRE registers like PC and BP, but
+we also mutate the on-target Z register when issuing sram-read etc. We
+should keep track of the original values and [[https://github.com/dcwbrown/dwire-debug/blob/a2830d578cce5d11c77cf0c7a3c8cbb6dbb1864a/src/dwire/DwPort.c#L202-L203][
+restore them on dw-continue]].
+
+*** Address and register consistency
+
+All assembly instructions just take in integers. We should probably
+introduce types here. It's useful to know that an address is of type
+flash, we wouldn't have to manually by two when working with ~rjmp~
+etc.
+
+*** Integration with avr-gcc and ELF debugging symbols
+
+It's be cool to be able to write C code the usual way, and have access
+to it's symbol table from the REPL. This is in danger of
+reimplementing a little too much of ~gdb~, though.
