@@ -11,7 +11,7 @@
           (let* ((size (min chunksize len))
                  (next (+ start size)))
             (loop next (- len size)
-                  (kons result (reader start size))))
+                  (kons (reader start size) result)))
           result))))
 
 (define (writer-chunkify writer default-chunksize)
