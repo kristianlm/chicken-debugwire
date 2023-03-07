@@ -42,6 +42,9 @@
   "1001 010k kkkk 111k 
    kkkk kkkk kkkk kkkk")
 
+(define-instruction icall "Indirect Call to Subroutine" () "1001 0101 0000 1001")
+(define-instruction ijmp  "Indirect Jump"               () "1001 0100 0000 1001")
+
 (define-instruction cli "Clear Global Interrupt Enable Bit"
   ()
   "1001 0100 1111 1000")
