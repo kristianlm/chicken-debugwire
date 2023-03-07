@@ -16,11 +16,12 @@
 (define current-dw (make-parameter #f))
 (define baudrate   (make-parameter #f))
 
-;; get the "pong" reply from target which is issued immediately after
-;; break signals.
+;; get the #x55 "pong" reply from target which is issued immediately
+;; after break signals.
 (define (dw-break-expect #!key
                          (wait (lambda () (thread-yield!)))
                          (dw (current-dw)))
+  (dw-echo-flush! dw)
   (let loop ()
     (let ((c (apply
               (lambda (str bytes)
@@ -167,15 +168,17 @@
              #x60 #x31))
   (dw-break-expect))
 
-(define (dw-continue/ret) (dw-write (bytevector #x63 #x30)) (dw-break-expect) )
+(define (dw-continue/ret)
+  (dw-write (bytevector #x63 #x30))
+  (dw-break-expect))
+
 (define (dw-continue #!optional (dw (current-dw)))
   (dw-write (bytevector #x60 #x30)) ;; resume normal execution
-  (dw-echo-flush! dw))
+  (dw-break-expect dw))
 
 (define (dw-continue/bp bp #!key (dw (current-dw)))
   (set! (BP) (/ bp 2))
   (dw-write (bytevector #x61 #x30))
-  (dw-echo-flush! dw)
   (dw-break-expect dw))
 
 ;; disable debugWirte on target (enables ISP)
