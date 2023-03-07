@@ -163,12 +163,12 @@
 
 ;; (begin (dw-step) (PC))
 (define (dw-step)
-  (dw-write (bytevector
-             #xD1 #x00 #x01 ;; BP
-             #x60 #x31))
+  (set! (BP) 1)
+  (dw-write (bytevector #x60 #x31))
   (dw-break-expect))
 
-(define (dw-continue/ret)
+(define (dw-continue/ret) ;; step out
+  (set! (BP) 1)
   (dw-write (bytevector #x63 #x30))
   (dw-break-expect))
 
