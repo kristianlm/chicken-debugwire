@@ -318,20 +318,65 @@
 
 ;; ====================
 
-(define PINB
-  (getter-with-setter
-   (lambda () (bytes->u8 (dw-sram-read #x36 1)))
-   (lambda (v) (dw-sram-write #x36 (u8->bytes v)))))
+(define (io-register address)
+  (let ((address (+ address #x20)))
+   (getter-with-setter
+    (lambda () (bytes->u8 (dw-sram-read address 1)))
+    (lambda (v) (dw-sram-write address (u8->bytes v))))))
 
-(define DDRB
-  (getter-with-setter
-   (lambda () (bytes->u8 (dw-sram-read #x37 1)))
-   (lambda (v) (dw-sram-write #x37 (u8->bytes v)))))
-
-(define PORTB
-  (getter-with-setter
-   (lambda () (bytes->u8 (dw-sram-read #x38 1)))
-   (lambda (v) (dw-sram-write #x38 (u8->bytes v)))))
+(begin
+  (define SREG     (io-register #x3F))
+  (define SPH      (io-register #x3E))
+  (define SPL      (io-register #x3D))
+  (define GIMSK    (io-register #x3B))
+  (define GIFR     (io-register #x3A))
+  (define TIMSK    (io-register #x39))
+  (define TIFR     (io-register #x38))
+  (define SPMCSR   (io-register #x37))
+  (define MCUCR    (io-register #x35))
+  (define MCUSR    (io-register #x34))
+  (define TCCR0B   (io-register #x33))
+  (define TCNT0    (io-register #x32))
+  (define OSCCAL   (io-register #x31))
+  (define TCCR1    (io-register #x30))
+  (define TCNT1    (io-register #x2F))
+  (define OCR1A    (io-register #x2E))
+  (define OCR1C    (io-register #x2D))
+  (define GTCCR    (io-register #x2C))
+  (define OCR1B    (io-register #x2B))
+  (define TCCR0A   (io-register #x2A))
+  (define OCR0A    (io-register #x29))
+  (define OCR0B    (io-register #x28))
+  (define PLLCSR   (io-register #x27))
+  (define CLKPR    (io-register #x26))
+  (define DT1A     (io-register #x25))
+  (define DT1B     (io-register #x24))
+  (define DTPS1    (io-register #x23))
+  (define DWDR     (io-register #x22))
+  (define WDTCR    (io-register #x21))
+  (define PRR      (io-register #x20))
+  (define EEARH    (io-register #x1F))
+  (define EEARL    (io-register #x1E))
+  (define EEDR     (io-register #x1D))
+  (define EECR     (io-register #x1C))
+  (define PORTB    (io-register #x18))
+  (define DDRB     (io-register #x17))
+  (define PINB     (io-register #x16))
+  (define PCMSK    (io-register #x15))
+  (define DIDR0    (io-register #x14))
+  (define GPIOR2   (io-register #x13))
+  (define GPIOR1   (io-register #x12))
+  (define GPIOR0   (io-register #x11))
+  (define USIBR    (io-register #x10))
+  (define USIDR    (io-register #x0F))
+  (define USISR    (io-register #x0E))
+  (define USICR    (io-register #x0D))
+  (define ACSR     (io-register #x08))
+  (define ADMUX    (io-register #x07))
+  (define ADCSRA   (io-register #x06))
+  (define ADCH     (io-register #x05))
+  (define ADCL     (io-register #x04))
+  (define ADCSRB   (io-register #x03)))
 
 ;; ==================== flash ====================
 
