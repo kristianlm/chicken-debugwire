@@ -172,9 +172,12 @@
   (dw-write (bytevector #x63 #x30))
   (dw-break-expect))
 
-(define (dw-continue #!optional (dw (current-dw)))
-  (dw-write (bytevector #x60 #x30)) ;; resume normal execution
-  (dw-break-expect dw))
+(define (dw-continue*)
+  (dw-write (bytevector #x60 #x30))) ;; resume normal execution
+
+(define (dw-continue)
+  (dw-continue*)
+  (dw-break-expect))
 
 (define (dw-continue/bp bp #!key (dw (current-dw)))
   (set! (BP) (/ bp 2))
