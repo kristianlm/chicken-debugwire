@@ -324,14 +324,17 @@
 
 (define (io-register address)
   (let ((address (+ address #x20)))
-   (getter-with-setter
-    (lambda () (bytes->u8 (dw-sram-read address 1)))
-    (lambda (v) (dw-sram-write address (u8->bytes v))))))
+    (sram-register address)))
+
+(define (io-register2 address)
+  (let ((address (+ address #x20)))
+    (getter-with-setter
+     (lambda () (bytes->u16le (dw-sram-read address 2)))
+     (lambda (v) (dw-sram-write address (u16le->bytes v))))))
 
 (begin
   (define SREG     (io-register #x3F))
-  (define SPH      (io-register #x3E))
-  (define SPL      (io-register #x3D))
+  (define SP      (io-register2 #x3D)) ;; H and L
   (define GIMSK    (io-register #x3B))
   (define GIFR     (io-register #x3A))
   (define TIMSK    (io-register #x39))
@@ -359,8 +362,7 @@
   (define DWDR     (io-register #x22))
   (define WDTCR    (io-register #x21))
   (define PRR      (io-register #x20))
-  (define EEARH    (io-register #x1F))
-  (define EEARL    (io-register #x1E))
+  (define EEAR    (io-register2 #x1E)) ;; H and L
   (define EEDR     (io-register #x1D))
   (define EECR     (io-register #x1C))
   (define PORTB    (io-register #x18))
@@ -378,8 +380,7 @@
   (define ACSR     (io-register #x08))
   (define ADMUX    (io-register #x07))
   (define ADCSRA   (io-register #x06))
-  (define ADCH     (io-register #x05))
-  (define ADCL     (io-register #x04))
+  (define ADC     (io-register2 #x04)) ;; H and L
   (define ADCSRB   (io-register #x03)))
 
 ;; ==================== flash ====================
