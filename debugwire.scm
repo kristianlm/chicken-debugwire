@@ -5,7 +5,7 @@
         chicken.memory.representation
         chicken.port
         chicken.time
-        (only srfi-1 append-map)
+        (only srfi-1 append-map iota)
         srfi-4
         srfi-18
         (only avr.asm adr->io spm out adiw))
