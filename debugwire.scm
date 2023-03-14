@@ -332,6 +332,7 @@
      (lambda () (bytes->u16le (dw-sram-read address 2)))
      (lambda (v) (dw-sram-write address (u16le->bytes v))))))
 
+;; OBS: for attiny85 only!
 (begin
   (define SREG     (io-register #x3F))
   (define SP      (io-register2 #x3D)) ;; H and L

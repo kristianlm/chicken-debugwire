@@ -17,7 +17,7 @@ It's based off of the wonderful work of [[http://www.ruemohr.org/docs/debugwire.
 takes a slightly different approach and tries to give you a Scheme
 REPL experience when working with these microcontrollers.
 
-The project stage is experimental, at best! And only the ATtiny85
+⚠ The project stage is experimental, at best! And only the ATtiny85
 microcontroller is currently supported. If you actually just want to
 start with debugWIRE, I'd strongly recommend the projects above.
 
