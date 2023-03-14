@@ -314,10 +314,11 @@
     (dw-write (bytevector #x66 #xC2 #x04 #x20 bytes))))
 
 (define dw-sram-write (writer-chunkify dw-sram-write* 128))
-(define SP
+
+(define (sram-register address)
   (getter-with-setter
-   (lambda () (bytes->u16le (dw-sram-read #x5D 2)))
-   (lambda (v) (dw-sram-write #x5D (u16le->bytes v)))))
+   (lambda () (bytes->u8 (dw-sram-read address 1)))
+   (lambda (v) (dw-sram-write address (u8->bytes v)))))
 
 ;; ====================
 
