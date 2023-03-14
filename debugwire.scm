@@ -29,7 +29,7 @@
                     (begin (wait) #f)
                     (char->integer (string-ref str 0))))
               (file-read dw 1))))
-      (print "dw-break-expect: serial read " (and c (integer->char c)) " (" c ")")
+      (print "dw-break-expect: serial read " (if c (conc (integer->char c)  " (#x" (number->string c 16) ")") c))
       (if (equal? c 85)
           c
           (loop)))))
