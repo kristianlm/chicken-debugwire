@@ -113,10 +113,10 @@ something of real-world value. So here are just a few major points:
 
 *** Restoring target to working order before ~dw-continue~
 
-Since we not only mutate the debugWIRE registers like PC and BP, but
-we also mutate the on-target Z register when issuing sram-read etc. We
-should keep track of the original values and [[https://github.com/dcwbrown/dwire-debug/blob/a2830d578cce5d11c77cf0c7a3c8cbb6dbb1864a/src/dwire/DwPort.c#L202-L203][
-restore them on dw-continue]].
+We not only mutate the debugWIRE registers like PC and BP, but we also
+mutate the on-target Z register when issuing sram-read etc. Therefore,
+we should keep track of the original values and [[https://github.com/dcwbrown/dwire-debug/blob/a2830d578cce5d11c77cf0c7a3c8cbb6dbb1864a/src/dwire/DwPort.c#L202-L203][restore them on
+dw-continue]].
 
 *** Address and register consistency
 
